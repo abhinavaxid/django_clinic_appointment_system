@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Home</h2>
+<p>Total Bookings: {{ total_bookings }}</p>
+<p>Next Booking Date: {{ next_booking }}</p>
+<button id="menu-toggle">Toggle Menu</button>
+<div id="menu" style="display: none;">
+    <ul>
+        <li><a href="#" id="book-appointment-link">Book Appointment</a></li>
+        <li><a href="#" id="my-appointments-link">My Appointments</a></li>
+        <li><a href="{% url 'logout' %}">Logout</a></li>
+    </ul>
+</div>
+
+<!-- Book Appointment Popup -->
+<div id="book-appointment-popup" style="display: none;">
+    <div>
+        <h2>Book Appointment</h2>
+        <form id="book-appointment-form" method="post">
+            {% csrf_token %}
+            <label>First Name:</label>
+            <input type="text" name="first_name" value="{{ first_name }}" readonly><br><br>
+            <label>Last Name:</label>
+            <input type="text" name="last_name" value="{{ last_name }}" readonly><br><br>
+            <label>Gender:</label>
+            <input type="text" name="gender" value="{{ gender }}" readonly><br><br>
+            <label>Date of Birth:</label>
+            {{ dob }} <br><br>
+            <label>Age:</label>
+            <input type="number" name="age" value="{{ age }}" readonly><br><br>
+            <label>Appointment Date:</label>
+            <input type="date" name="appointment_date" required><br><br>
+            <label>Time:</label>
+            <input type="time" name="appointment_time" required><br><br>
+            <label>Doctor Name:</label>
+            <select name="doctor_name" required>
+                <option value="Doctor 1">Doctor 1</option>
+                <option value="Doctor 2">Doctor 2</option>
+            </select><br><br>
+            <label>Purpose of Visit:</label>
+            <input type="text" name="purpose" required><br><br>
+            <button type="submit">Book Appointment</button>
+        </form>
+        <button id="close-popup">Close</button>
+    </div>
+</div>
+
+<!-- My Appointments Popup -->
+<div id="my-appointments-popup" style="display: none;">
+    <div>
+        <h2>My Appointments</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Doctor</th>
+                    <th>Purpose</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in appointments %}
+                <tr>
+                    <td>{{ appointment.appointment_date }}</td>
+                    <td>{{ appointment.appointment_time }}</td>
+                    <td>{{ appointment.doctor_name }}</td>
+                    <td>{{ appointment.purpose }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button id="close-appointments-popup">Close</button>
+    </div>
+</div>
+
+<script>
+document.getElementById('menu-toggle').onclick = function() {
+    var menu = document.getElementById('menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+};
+
+document.getElementById('book-appointment-link').onclick = function() {
+    document.getElementById('book-appointment-popup').style.display = 'block';
+};
+
+document.getElementById('close-popup').onclick = function() {
+    document.getElementById('book-appointment-popup').style.display = 'none';
+};
+
+document.getElementById('my-appointments-link').onclick = function() {
+    document.getElementById('my-appointments-popup').style.display = 'block';
+};
+
+document.getElementById('close-appointments-popup').onclick = function() {
+    document.getElementById('my-appointments-popup').style.display = 'none';
+};
+
+document.getElementById('book-appointment-form').onsubmit = function(event) {
+    event.preventDefault();
+    var form = document.getElementById('book-appointment-form');
+    var formData = new FormData(form);
+
+    fetch("{% url 'home' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Appointment booked successfully!');
+            document.getElementById('book-appointment-popup').style.display = 'none';
+            location.reload(); // Reload the page to update the total bookings count and next booking date
+        } else {
+            alert('Failed to book appointment.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+};
+</script>
+{% endblock %}

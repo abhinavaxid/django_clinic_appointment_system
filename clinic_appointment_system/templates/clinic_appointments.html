@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Clinic Appointments</h2>
+<form id="filter-form" method="post">
+    {% csrf_token %}
+    <label for="appointment_date">Appointment Date:</label>
+    <input type="date" id="appointment_date" name="appointment_date">
+    
+    <label for="doctor_name">Doctor Name:</label>
+    <select id="doctor_name" name="doctor_name">
+        <option value="">All</option>
+        {% for doctor in doctor_names %}
+            <option value="{{ doctor }}">{{ doctor }}</option>
+        {% endfor %}
+    </select>
+    
+    <button type="submit">Filter</button>
+</form>
+
+<table>
+    <thead>
+        <tr>
+            <th>Appointment Date</th>
+            <th>Appointment Time</th>
+            <th>Patient Name</th>
+            <th>Age</th>
+            <th>Purpose of Visit</th>
+            <th>Doctor Name</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for appointment in appointments %}
+        <tr>
+            <td>{{ appointment.appointment_date }}</td>
+            <td>{{ appointment.appointment_time }}</td>
+            <td>{{ appointment.user.first_name }} {{ appointment.user.last_name }}</td>
+            <td>{{ appointment.user.patient.age }}</td>
+            <td>{{ appointment.purpose }}</td>
+            <td>{{ appointment.doctor_name }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    document.getElementById('filter-form').onsubmit = function(event) {
+        event.preventDefault();
+        var form = document.getElementById('filter-form');
+        var formData = new FormData(form);
+    
+        fetch("{% url 'clinic_appointments' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': form.querySelector('[name=csrfmiddlewaretoken]').value
+            },
+        })
+        .then(response => response.text())
+        .then(html => {
+            var parser = new DOMParser();
+            var doc = parser.parseFromString(html, 'text/html');
+            var tbody = doc.querySelector('tbody');
+            document.querySelector('tbody').innerHTML = tbody.innerHTML;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    };
+    </script>
+    
+{% endblock %}
